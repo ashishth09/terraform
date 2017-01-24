@@ -68,7 +68,7 @@ func dataSourceInfrastructureSSHKeyRead(d *schema.ResourceData, meta interface{}
 	service := services.GetAccountService(sess)
 
 	label := d.Get("label").(string)
-	most_recent := d.Get("most_recent").(bool)
+	mostRecent := d.Get("most_recent").(bool)
 
 	keys, err := service.
 		Filter(filter.Build(filter.Path("sshKeys.label").Eq(label))).
@@ -79,7 +79,7 @@ func dataSourceInfrastructureSSHKeyRead(d *schema.ResourceData, meta interface{}
 		return fmt.Errorf("Error retrieving SSH key: %s", err)
 	}
 
-	if len(keys) > 1 && !most_recent {
+	if len(keys) > 1 && !mostRecent {
 		return fmt.Errorf(
 			"More than one ssh key found with label matching [%s]. "+
 				"Either set 'most_recent' to true in your "+

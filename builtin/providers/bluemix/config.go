@@ -1,15 +1,23 @@
+/*
+* Licensed Materials - Property of IBM
+* (C) Copyright IBM Corp. 2017. All Rights Reserved.
+* US Government Users Restricted Rights - Use, duplication or
+* disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
+ */
+
 package bluemix
 
 import slsession "github.com/softlayer/softlayer-go/session"
 
+//Config stores user provider input config
 type Config struct {
 	Username               string
-	SoftlayerApiKey        string
+	SoftlayerAPIKey        string
 	Password               string
 	Region                 string
 	Timeout                string
 	SoftlayerUsername      string
-	SoftlayerEndpointUrl   string
+	SoftlayerEndpointURL   string
 	SoftlayerTimeout       string
 	SoftlayerAccountNumber string
 }
@@ -34,7 +42,8 @@ func (config providerConfig) BluemixSession() *Session {
 	return config.session
 }
 
-func (c *Config) Client() (ProviderConfig, error) {
+// Config configures and returns a fully initialized ProviderConfig
+func (c *Config) Config() (interface{}, error) {
 
 	sess, err := NewSession(c.Username,
 		c.Password,
@@ -44,8 +53,8 @@ func (c *Config) Client() (ProviderConfig, error) {
 		"",
 		c.Timeout,
 		c.SoftlayerUsername,
-		c.SoftlayerApiKey,
-		c.SoftlayerEndpointUrl,
+		c.SoftlayerAPIKey,
+		c.SoftlayerEndpointURL,
 		c.SoftlayerAccountNumber,
 		c.SoftlayerTimeout)
 

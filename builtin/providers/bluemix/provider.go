@@ -93,7 +93,8 @@ func Provider() terraform.ResourceProvider {
 		},
 
 		ResourcesMap: map[string]*schema.Resource{
-			"bluemix_infrastructure_ssh_key": resourceInfrastructureSSHKey(),
+			"bluemix_infrastructure_ssh_key":       resourceInfrastructureSSHKey(),
+			"bluemix_infrastructure_virtual_guest": resourceInfrastructureVirtualGuest(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -112,16 +113,16 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 
 	config := Config{
 		Username:               d.Get("username").(string),
-		SoftlayerApiKey:        d.Get("softlayer_api_key").(string),
+		SoftlayerAPIKey:        d.Get("softlayer_api_key").(string),
 		Password:               d.Get("password").(string),
 		Region:                 d.Get("region").(string),
 		Timeout:                timeout,
 		SoftlayerUsername:      d.Get("softlayer_username").(string),
-		SoftlayerEndpointUrl:   d.Get("softlayer_endpoint_url").(string),
+		SoftlayerEndpointURL:   d.Get("softlayer_endpoint_url").(string),
 		SoftlayerTimeout:       softlayerTimeout,
 		SoftlayerAccountNumber: d.Get("softlayer_account_number").(string),
 	}
 
-	return config.Client()
+	return config.Config()
 
 }

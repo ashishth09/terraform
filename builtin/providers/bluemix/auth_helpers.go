@@ -1,6 +1,6 @@
 /*
 * Licensed Materials - Property of IBM
-* (C) Copyright IBM Corp. 2016. All Rights Reserved.
+* (C) Copyright IBM Corp. 2017. All Rights Reserved.
 * US Government Users Restricted Rights - Use, duplication or
 * disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
  */
@@ -24,9 +24,9 @@ import (
 )
 
 // DefaultTimeout default timeout if not specified
-const DefaultTimeout = time.Second * 60
-const DefaultEndpoint = "https://api.softlayer.com/xmlrpc/v3"
-const DefaultRegion = "ng"
+const defaultTimeout = time.Second * 60
+const defaultEndpoint = "https://api.softlayer.com/xmlrpc/v3"
+const defaultRegion = "ng"
 
 // Session stores the information required for communication with the SoftLayer
 // API
@@ -74,7 +74,7 @@ type Session struct {
 	Debug bool
 }
 
-// New creates and returns a pointer to a new session object.
+// NewSession creates and returns a pointer to a new session object.
 func NewSession(args ...interface{}) (*Session, error) {
 
 	keys := map[string]int{"username": 0,
@@ -120,7 +120,7 @@ func NewSession(args ...interface{}) (*Session, error) {
 	if timeout != "" {
 		timeoutDuration, _ = time.ParseDuration(fmt.Sprintf("%ss", timeout))
 	} else {
-		timeoutDuration, _ = time.ParseDuration(fmt.Sprintf("%ss", DefaultTimeout))
+		timeoutDuration, _ = time.ParseDuration(fmt.Sprintf("%ss", defaultTimeout))
 	}
 
 	//TODO validate the input params
@@ -151,7 +151,7 @@ func NewSession(args ...interface{}) (*Session, error) {
 	bluemixSession.authenticate()
 	endpointURL := values[keys["softlayer_endpoint_url"]]
 	if endpointURL == "" {
-		endpointURL = DefaultEndpoint
+		endpointURL = defaultEndpoint
 	}
 	softlayerSession := slsession.New(
 		values[keys["softlayer_username"]], // If not specified , these values will default to the string zero value of ""
@@ -398,7 +398,7 @@ func ValueFromEnv(paramName string) string {
 			defValue = os.Getenv("BLUEMIX_REGION")
 		}
 		if defValue == "" {
-			defValue = DefaultRegion
+			defValue = defaultRegion
 		}
 
 	case "timeout":

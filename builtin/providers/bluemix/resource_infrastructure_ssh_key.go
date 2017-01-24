@@ -68,6 +68,7 @@ func resourceInfrastructureSSHKey() *schema.Resource {
 
 func resourceInfrastructureSSHKeyCreate(d *schema.ResourceData, meta interface{}) error {
 	sess := meta.(ProviderConfig).SoftLayerSession()
+	fmt.Println(sess)
 	service := services.GetSecuritySshKeyService(sess)
 
 	// First check if the key exits by fingerprint
