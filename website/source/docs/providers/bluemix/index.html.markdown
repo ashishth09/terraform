@@ -6,7 +6,7 @@ description: |-
   The Bluemix provider is used to interact with Bluemix resources.
 ---
 
-# SoftLayer Provider
+# Bluemix Provider
 
 The Bluemix provider is used to manage Bluemix resources.
 
