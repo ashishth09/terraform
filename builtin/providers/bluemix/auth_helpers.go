@@ -29,7 +29,7 @@ const defaultEndpoint = "https://api.softlayer.com/xmlrpc/v3"
 const defaultRegion = "ng"
 
 // Session stores the information required for communication with the SoftLayer
-// API
+// and Bluemix API
 type Session struct {
 	// UserName is the name of the Bluemix API user
 	UserName string
@@ -212,7 +212,9 @@ func (s *Session) authenticate() error {
 	httpClient.Timeout = s.Timeout
 
 	req, err := http.NewRequest("POST", authURL, strings.NewReader(bodyAsValues.Encode()))
-	// TODO: error handling
+	if err != nil {
+		return fmt.Errorf("Failed issuing hosted service deletion request: %s", err)
+	}
 	for k, v := range authHeaders {
 		req.Header.Add(k, v)
 	}
@@ -382,6 +384,20 @@ func ValueFromEnv(paramName string) string {
 		defValue = os.Getenv("BM_PASSWORD")
 		if defValue == "" {
 			defValue = os.Getenv("BLUEMIX_PASSWORD")
+		}
+
+	case "softlayer_username":
+		// Prioritize SL_USERNAME
+		defValue = os.Getenv("SL_USERNAME")
+		if defValue == "" {
+			defValue = os.Getenv("SOFTLAYER_USERNAME")
+		}
+
+	case "sofltayer_api_key":
+		// Prioritize SL_API_KEY
+		defValue = os.Getenv("SL_API_KEY")
+		if defValue == "" {
+			defValue = os.Getenv("SOFTLAYER_API_KEY")
 		}
 
 	case "identity_cookie":

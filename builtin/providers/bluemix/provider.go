@@ -53,7 +53,7 @@ func Provider() terraform.ResourceProvider {
 				Optional:    true,
 				Description: "The SoftLayer user name.",
 				DefaultFunc: func() (interface{}, error) {
-					return "", nil
+					return ValueFromEnv("softlayer_username"), nil
 				},
 			},
 			"softlayer_api_key": {
@@ -61,7 +61,7 @@ func Provider() terraform.ResourceProvider {
 				Optional:    true,
 				Description: "The API key for SoftLayer API operations.",
 				DefaultFunc: func() (interface{}, error) {
-					return "", nil
+					return ValueFromEnv("softlayer_api_key"), nil
 				},
 			},
 			"softlayer_endpoint_url": {
@@ -123,6 +123,6 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		SoftlayerAccountNumber: d.Get("softlayer_account_number").(string),
 	}
 
-	return config.Config()
+	return config.ClientSession()
 
 }

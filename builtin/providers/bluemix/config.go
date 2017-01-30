@@ -22,28 +22,28 @@ type Config struct {
 	SoftlayerAccountNumber string
 }
 
-// ProviderConfig config that contains session
-type ProviderConfig interface {
+// ClientSession  contains session Bluemix and Softlayer session
+type ClientSession interface {
 	SoftLayerSession() *slsession.Session
 	BluemixSession() *Session
 }
 
-type providerConfig struct {
+type clientSession struct {
 	session *Session
 }
 
 // This implements the interface from terraform-provider-softlayer so we can pass in our ProviderConfig
-func (config providerConfig) SoftLayerSession() *slsession.Session {
-	return config.session.SoftLayerSession
+func (sess clientSession) SoftLayerSession() *slsession.Session {
+	return sess.session.SoftLayerSession
 }
 
 // Method to provide the Bluemix Session
-func (config providerConfig) BluemixSession() *Session {
-	return config.session
+func (sess clientSession) BluemixSession() *Session {
+	return sess.session
 }
 
-// Config configures and returns a fully initialized ProviderConfig
-func (c *Config) Config() (interface{}, error) {
+// ClientSession configures and returns a fully initialized ClientSession
+func (c *Config) ClientSession() (interface{}, error) {
 
 	sess, err := NewSession(c.Username,
 		c.Password,
@@ -58,5 +58,5 @@ func (c *Config) Config() (interface{}, error) {
 		c.SoftlayerAccountNumber,
 		c.SoftlayerTimeout)
 
-	return providerConfig{session: sess}, err
+	return clientSession{session: sess}, err
 }

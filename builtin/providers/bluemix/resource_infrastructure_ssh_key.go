@@ -67,8 +67,7 @@ func resourceInfrastructureSSHKey() *schema.Resource {
 }
 
 func resourceInfrastructureSSHKeyCreate(d *schema.ResourceData, meta interface{}) error {
-	sess := meta.(ProviderConfig).SoftLayerSession()
-	fmt.Println(sess)
+	sess := meta.(ClientSession).SoftLayerSession()
 	service := services.GetSecuritySshKeyService(sess)
 
 	// First check if the key exits by fingerprint
@@ -146,12 +145,12 @@ func resourceInfrastructureSSHKeyCreate(d *schema.ResourceData, meta interface{}
 }
 
 func resourceInfrastructureSSHKeyRead(d *schema.ResourceData, meta interface{}) error {
-	sess := meta.(ProviderConfig).SoftLayerSession()
+	sess := meta.(ClientSession).SoftLayerSession()
 	service := services.GetSecuritySshKeyService(sess)
 
-	keyId, _ := strconv.Atoi(d.Id())
+	keyID, _ := strconv.Atoi(d.Id())
 
-	key, err := service.Id(keyId).GetObject()
+	key, err := service.Id(keyID).GetObject()
 	if err != nil {
 		// If the key is somehow already destroyed, mark as
 		// succesfully gone
@@ -176,12 +175,12 @@ func resourceInfrastructureSSHKeyRead(d *schema.ResourceData, meta interface{}) 
 }
 
 func resourceInfrastructureSSHKeyUpdate(d *schema.ResourceData, meta interface{}) error {
-	sess := meta.(ProviderConfig).SoftLayerSession()
+	sess := meta.(ClientSession).SoftLayerSession()
 	service := services.GetSecuritySshKeyService(sess)
 
-	keyId, _ := strconv.Atoi(d.Id())
+	keyID, _ := strconv.Atoi(d.Id())
 
-	key, err := service.Id(keyId).GetObject()
+	key, err := service.Id(keyID).GetObject()
 	if err != nil {
 		return fmt.Errorf("Error retrieving SSH key: %s", err)
 	}
@@ -194,7 +193,7 @@ func resourceInfrastructureSSHKeyUpdate(d *schema.ResourceData, meta interface{}
 		key.Notes = sl.String(d.Get("notes").(string))
 	}
 
-	_, err = service.Id(keyId).EditObject(&key)
+	_, err = service.Id(keyID).EditObject(&key)
 	if err != nil {
 		return fmt.Errorf("Error editing SSH key: %s", err)
 	}
@@ -202,7 +201,7 @@ func resourceInfrastructureSSHKeyUpdate(d *schema.ResourceData, meta interface{}
 }
 
 func resourceInfrastructureSSHKeyDelete(d *schema.ResourceData, meta interface{}) error {
-	sess := meta.(ProviderConfig).SoftLayerSession()
+	sess := meta.(ClientSession).SoftLayerSession()
 	service := services.GetSecuritySshKeyService(sess)
 
 	id, err := strconv.Atoi(d.Id())
@@ -221,14 +220,14 @@ func resourceInfrastructureSSHKeyDelete(d *schema.ResourceData, meta interface{}
 }
 
 func resourceInfrastructureSSHKeyExists(d *schema.ResourceData, meta interface{}) (bool, error) {
-	sess := meta.(ProviderConfig).SoftLayerSession()
+	sess := meta.(ClientSession).SoftLayerSession()
 	service := services.GetSecuritySshKeyService(sess)
 
-	keyId, err := strconv.Atoi(d.Id())
+	keyID, err := strconv.Atoi(d.Id())
 	if err != nil {
 		return false, fmt.Errorf("Not a valid ID, must be an integer: %s", err)
 	}
 
-	result, err := service.Id(keyId).GetObject()
-	return result.Id != nil && err == nil && *result.Id == keyId, nil
+	result, err := service.Id(keyID).GetObject()
+	return result.Id != nil && err == nil && *result.Id == keyID, nil
 }

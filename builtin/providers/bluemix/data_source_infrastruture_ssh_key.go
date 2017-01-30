@@ -64,7 +64,7 @@ func dataSourceInfrastructureSSHKey() *schema.Resource {
 }
 
 func dataSourceInfrastructureSSHKeyRead(d *schema.ResourceData, meta interface{}) error {
-	sess := meta.(ProviderConfig).SoftLayerSession()
+	sess := meta.(ClientSession).SoftLayerSession()
 	service := services.GetAccountService(sess)
 
 	label := d.Get("label").(string)

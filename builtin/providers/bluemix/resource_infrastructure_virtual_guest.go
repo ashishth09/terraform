@@ -22,41 +22,7 @@ import (
 	"github.com/softlayer/softlayer-go/sl"
 )
 
-func getSubnetId(subnet string, meta interface{}) (int, error) {
-	service := services.GetAccountService(meta.(ProviderConfig).SoftLayerSession())
-
-	subnetInfo := strings.Split(subnet, "/")
-	if len(subnetInfo) != 2 {
-		return 0, fmt.Errorf(
-			"Unable to parse the provided subnet: %s", subnet)
-	}
-
-	networkIdentifier := subnetInfo[0]
-	cidr := subnetInfo[1]
-
-	subnets, err := service.
-		Mask("id").
-		Filter(
-			filter.Build(
-				filter.Path("subnets.cidr").Eq(cidr),
-				filter.Path("subnets.networkIdentifier").Eq(networkIdentifier),
-			),
-		).
-		GetSubnets()
-
-	if err != nil {
-		return 0, fmt.Errorf("Error looking up Subnet: %s", err)
-	}
-
-	if len(subnets) < 1 {
-		return 0, fmt.Errorf(
-			"Unable to locate a subnet matching the provided subnet: %s", subnet)
-	}
-
-	return *subnets[0].Id, nil
-}
-
-func genId() (interface{}, error) {
+func genID() (interface{}, error) {
 	numBytes := 8
 	bytes := make([]byte, numBytes)
 	n, err := rand.Reader.Read(bytes)
@@ -90,7 +56,7 @@ func resourceInfrastructureVirtualGuest() *schema.Resource {
 			"hostname": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				DefaultFunc: genId,
+				DefaultFunc: genID,
 				DiffSuppressFunc: func(k, o, n string, d *schema.ResourceData) bool {
 					// FIXME: Work around another bug in terraform.
 					// When a default function is used with an optional property,
@@ -366,6 +332,40 @@ func resourceInfrastructureVirtualGuest() *schema.Resource {
 	}
 }
 
+func getSubnetID(subnet string, meta interface{}) (int, error) {
+	service := services.GetAccountService(meta.(ClientSession).SoftLayerSession())
+
+	subnetInfo := strings.Split(subnet, "/")
+	if len(subnetInfo) != 2 {
+		return 0, fmt.Errorf(
+			"Unable to parse the provided subnet: %s", subnet)
+	}
+
+	networkIdentifier := subnetInfo[0]
+	cidr := subnetInfo[1]
+
+	subnets, err := service.
+		Mask("id").
+		Filter(
+			filter.Build(
+				filter.Path("subnets.cidr").Eq(cidr),
+				filter.Path("subnets.networkIdentifier").Eq(networkIdentifier),
+			),
+		).
+		GetSubnets()
+
+	if err != nil {
+		return 0, fmt.Errorf("Error looking up Subnet: %s", err)
+	}
+
+	if len(subnets) < 1 {
+		return 0, fmt.Errorf(
+			"Unable to locate a subnet matching the provided subnet: %s", subnet)
+	}
+
+	return *subnets[0].Id, nil
+}
+
 func getNameForBlockDevice(i int) string {
 	// skip 1, which is reserved for the swap disk.
 	// so we get 0, 2, 3, 4, 5 ...
@@ -433,19 +433,19 @@ func getVirtualGuestTemplateFromResourceData(d *schema.ResourceData, meta interf
 		opts.DedicatedAccountHostOnlyFlag = sl.Bool(dedicatedAcctHostOnly.(bool))
 	}
 
-	if imgId, ok := d.GetOk("image_id"); ok {
-		imageId := imgId.(int)
+	if imgID, ok := d.GetOk("image_id"); ok {
+		imageID := imgID.(int)
 		service := services.
-			GetVirtualGuestBlockDeviceTemplateGroupService(meta.(ProviderConfig).SoftLayerSession())
+			GetVirtualGuestBlockDeviceTemplateGroupService(meta.(ClientSession).SoftLayerSession())
 
 		image, err := service.
-			Mask("id,globalIdentifier").Id(imageId).
+			Mask("id,globalIdentifier").Id(imageID).
 			GetObject()
 		if err != nil {
-			return opts, fmt.Errorf("Error looking up image %d: %s", imageId, err)
+			return opts, fmt.Errorf("Error looking up image %d: %s", imageID, err)
 		} else if image.GlobalIdentifier == nil {
 			return opts, fmt.Errorf(
-				"Image template %d does not have a global identifier", imageId)
+				"Image template %d does not have a global identifier", imageID)
 		}
 
 		opts.BlockDeviceTemplateGroup = &datatypes.Virtual_Guest_Block_Device_Template_Group{
@@ -457,29 +457,29 @@ func getVirtualGuestTemplateFromResourceData(d *schema.ResourceData, meta interf
 		opts.OperatingSystemReferenceCode = sl.String(operatingSystemReferenceCode.(string))
 	}
 
-	publicVlanId := d.Get("public_vlan_id").(int)
+	publicVlanID := d.Get("public_vlan_id").(int)
 	publicSubnet := d.Get("public_subnet").(string)
-	privateVlanId := d.Get("private_vlan_id").(int)
+	privateVlanID := d.Get("private_vlan_id").(int)
 	privateSubnet := d.Get("private_subnet").(string)
 
 	primaryNetworkComponent := datatypes.Virtual_Guest_Network_Component{
 		NetworkVlan: &datatypes.Network_Vlan{},
 	}
 
-	if publicVlanId > 0 {
-		primaryNetworkComponent.NetworkVlan.Id = &publicVlanId
+	if publicVlanID > 0 {
+		primaryNetworkComponent.NetworkVlan.Id = &publicVlanID
 	}
 
 	// Apply frontend subnet if provided
 	if publicSubnet != "" {
-		primarySubnetId, err := getSubnetId(publicSubnet, meta)
+		primarySubnetId, err := getSubnetID(publicSubnet, meta)
 		if err != nil {
 			return opts, fmt.Errorf("Error creating virtual guest: %s", err)
 		}
 		primaryNetworkComponent.NetworkVlan.PrimarySubnetId = &primarySubnetId
 	}
 
-	if publicVlanId > 0 || publicSubnet != "" {
+	if publicVlanID > 0 || publicSubnet != "" {
 		opts.PrimaryNetworkComponent = &primaryNetworkComponent
 	}
 
@@ -487,20 +487,20 @@ func getVirtualGuestTemplateFromResourceData(d *schema.ResourceData, meta interf
 		NetworkVlan: &datatypes.Network_Vlan{},
 	}
 
-	if privateVlanId > 0 {
-		primaryBackendNetworkComponent.NetworkVlan.Id = &privateVlanId
+	if privateVlanID > 0 {
+		primaryBackendNetworkComponent.NetworkVlan.Id = &privateVlanID
 	}
 
 	// Apply backend subnet if provided
 	if privateSubnet != "" {
-		primarySubnetId, err := getSubnetId(privateSubnet, meta)
+		primarySubnetID, err := getSubnetID(privateSubnet, meta)
 		if err != nil {
 			return opts, fmt.Errorf("Error creating virtual guest: %s", err)
 		}
-		primaryBackendNetworkComponent.NetworkVlan.PrimarySubnetId = &primarySubnetId
+		primaryBackendNetworkComponent.NetworkVlan.PrimarySubnetId = &primarySubnetID
 	}
 
-	if privateVlanId > 0 || privateSubnet != "" {
+	if privateVlanID > 0 || privateSubnet != "" {
 		opts.PrimaryBackendNetworkComponent = &primaryBackendNetworkComponent
 	}
 
@@ -528,8 +528,8 @@ func getVirtualGuestTemplateFromResourceData(d *schema.ResourceData, meta interf
 }
 
 func resourceInfrastructureVirtualGuestCreate(d *schema.ResourceData, meta interface{}) error {
-	service := services.GetVirtualGuestService(meta.(ProviderConfig).SoftLayerSession())
-	sess := meta.(ProviderConfig).SoftLayerSession()
+	service := services.GetVirtualGuestService(meta.(ClientSession).SoftLayerSession())
+	sess := meta.(ClientSession).SoftLayerSession()
 
 	opts, err := getVirtualGuestTemplateFromResourceData(d, meta)
 	if err != nil {
@@ -601,26 +601,26 @@ func resourceInfrastructureVirtualGuestCreate(d *schema.ResourceData, meta inter
 	}
 
 	// Configure secondary IPs
-	secondaryIpCount := d.Get("secondary_ip_count").(int)
-	if secondaryIpCount > 0 {
+	secondaryIPCount := d.Get("secondary_ip_count").(int)
+	if secondaryIPCount > 0 {
 		if privateNetworkOnly {
 			return fmt.Errorf("Unable to configure public secondary addresses with a private_network_only option.")
 		}
-		staticIpItems, err := services.GetProductPackageService(sess).
+		staticIPItems, err := services.GetProductPackageService(sess).
 			Id(*template.PackageId).
 			Mask("id,capacity,description,units,keyName,prices[id,categories[id,name,categoryCode]]").
-			Filter(filter.Build(filter.Path("items.keyName").Eq(strconv.Itoa(secondaryIpCount) + "_PUBLIC_IP_ADDRESSES"))).
+			Filter(filter.Build(filter.Path("items.keyName").Eq(strconv.Itoa(secondaryIPCount) + "_PUBLIC_IP_ADDRESSES"))).
 			GetItems()
 		if err != nil {
 			return fmt.Errorf("Error generating order template: %s", err)
 		}
-		if len(staticIpItems) == 0 {
-			return fmt.Errorf("No product items matching %d_PUBLIC_IP_ADDRESSES could be found", secondaryIpCount)
+		if len(staticIPItems) == 0 {
+			return fmt.Errorf("No product items matching %d_PUBLIC_IP_ADDRESSES could be found", secondaryIPCount)
 		}
 
 		template.Prices = append(template.Prices,
 			datatypes.Product_Item_Price{
-				Id: staticIpItems[0].Prices[0].Id,
+				Id: staticIPItems[0].Prices[0].Id,
 			},
 		)
 	}
@@ -662,7 +662,7 @@ func resourceInfrastructureVirtualGuestCreate(d *schema.ResourceData, meta inter
 }
 
 func resourceInfrastructureVirtualGuestRead(d *schema.ResourceData, meta interface{}) error {
-	service := services.GetVirtualGuestService(meta.(ProviderConfig).SoftLayerSession())
+	service := services.GetVirtualGuestService(meta.(ClientSession).SoftLayerSession())
 
 	id, err := strconv.Atoi(d.Id())
 	if err != nil {
@@ -783,7 +783,7 @@ func resourceInfrastructureVirtualGuestRead(d *schema.ResourceData, meta interfa
 	// Read secondary IP addresses
 	d.Set("secondary_ip_addresses", nil)
 	if result.PrimaryIpAddress != nil {
-		secondarySubnetResult, err := services.GetAccountService(meta.(ProviderConfig).SoftLayerSession()).
+		secondarySubnetResult, err := services.GetAccountService(meta.(ClientSession).SoftLayerSession()).
 			Mask("ipAddresses[id,ipAddress]").
 			Filter(filter.Build(filter.Path("publicSubnets.endPointIpAddress.ipAddress").Eq(*result.PrimaryIpAddress))).
 			GetPublicSubnets()
@@ -807,7 +807,7 @@ func resourceInfrastructureVirtualGuestRead(d *schema.ResourceData, meta interfa
 }
 
 func resourceInfrastructureVirtualGuestUpdate(d *schema.ResourceData, meta interface{}) error {
-	sess := meta.(ProviderConfig).SoftLayerSession()
+	sess := meta.(ClientSession).SoftLayerSession()
 	service := services.GetVirtualGuestService(sess)
 
 	id, err := strconv.Atoi(d.Id())
@@ -886,7 +886,7 @@ func resourceInfrastructureVirtualGuestUpdate(d *schema.ResourceData, meta inter
 }
 
 func resourceInfrastructureVirtualGuestDelete(d *schema.ResourceData, meta interface{}) error {
-	service := services.GetVirtualGuestService(meta.(ProviderConfig).SoftLayerSession())
+	service := services.GetVirtualGuestService(meta.(ClientSession).SoftLayerSession())
 
 	id, err := strconv.Atoi(d.Id())
 	if err != nil {
@@ -927,7 +927,7 @@ func WaitForUpgradeTransactionsToAppear(d *schema.ResourceData, meta interface{}
 		Pending: []string{"retry", "pending_upgrade"},
 		Target:  []string{"upgrade_started"},
 		Refresh: func() (interface{}, string, error) {
-			service := services.GetVirtualGuestService(meta.(ProviderConfig).SoftLayerSession())
+			service := services.GetVirtualGuestService(meta.(ClientSession).SoftLayerSession())
 			transactions, err := service.Id(id).GetActiveTransactions()
 			if err != nil {
 				if apiErr, ok := err.(sl.Error); ok && apiErr.StatusCode == 404 {
@@ -965,7 +965,7 @@ func WaitForNoActiveTransactions(d *schema.ResourceData, meta interface{}) (inte
 		Pending: []string{"retry", "active"},
 		Target:  []string{"idle"},
 		Refresh: func() (interface{}, string, error) {
-			service := services.GetVirtualGuestService(meta.(ProviderConfig).SoftLayerSession())
+			service := services.GetVirtualGuestService(meta.(ClientSession).SoftLayerSession())
 			transactions, err := service.Id(id).GetActiveTransactions()
 			if err != nil {
 				if apiErr, ok := err.(sl.Error); ok && apiErr.StatusCode == 404 {
@@ -1004,7 +1004,7 @@ func WaitForVirtualGuestAvailable(d *schema.ResourceData, meta interface{}) (int
 		Target:  []string{"available"},
 		Refresh: func() (interface{}, string, error) {
 			// Check active transactions
-			service := services.GetVirtualGuestService(meta.(ProviderConfig).SoftLayerSession())
+			service := services.GetVirtualGuestService(meta.(ClientSession).SoftLayerSession())
 			result, err := service.Id(id).Mask("activeTransaction").GetObject()
 			if err != nil {
 				if apiErr, ok := err.(sl.Error); ok && apiErr.StatusCode == 404 {
@@ -1033,7 +1033,7 @@ func WaitForVirtualGuestAvailable(d *schema.ResourceData, meta interface{}) (int
 			// Check Secondary IP address availability.
 			if d.Get("secondary_ip_count").(int) > 0 {
 				log.Println("Refreshing secondary IPs state.")
-				secondarySubnetResult, err := services.GetAccountService(meta.(ProviderConfig).SoftLayerSession()).
+				secondarySubnetResult, err := services.GetAccountService(meta.(ClientSession).SoftLayerSession()).
 					Mask("ipAddresses[id,ipAddress]").
 					Filter(filter.Build(filter.Path("publicSubnets.endPointIpAddress.virtualGuest.id").Eq(d.Id()))).
 					GetPublicSubnets()
@@ -1056,13 +1056,13 @@ func WaitForVirtualGuestAvailable(d *schema.ResourceData, meta interface{}) (int
 }
 
 func resourceInfrastructureVirtualGuestExists(d *schema.ResourceData, meta interface{}) (bool, error) {
-	service := services.GetVirtualGuestService(meta.(ProviderConfig).SoftLayerSession())
-	guestId, err := strconv.Atoi(d.Id())
+	service := services.GetVirtualGuestService(meta.(ClientSession).SoftLayerSession())
+	guestID, err := strconv.Atoi(d.Id())
 	if err != nil {
 		return false, fmt.Errorf("Not a valid ID, must be an integer: %s", err)
 	}
 
-	result, err := service.Id(guestId).GetObject()
+	result, err := service.Id(guestID).GetObject()
 	if err != nil {
 		if apiErr, ok := err.(sl.Error); ok {
 			if apiErr.StatusCode == 404 {
@@ -1072,7 +1072,7 @@ func resourceInfrastructureVirtualGuestExists(d *schema.ResourceData, meta inter
 		return false, fmt.Errorf("Error communicating with the API: %s", err)
 	}
 
-	return result.Id != nil && *result.Id == guestId, nil
+	return result.Id != nil && *result.Id == guestID, nil
 }
 
 func getTags(d *schema.ResourceData) string {
@@ -1091,7 +1091,7 @@ func getTags(d *schema.ResourceData) string {
 }
 
 func setGuestTags(id int, d *schema.ResourceData, meta interface{}) error {
-	service := services.GetVirtualGuestService(meta.(ProviderConfig).SoftLayerSession())
+	service := services.GetVirtualGuestService(meta.(ClientSession).SoftLayerSession())
 
 	tags := getTags(d)
 	if tags != "" {
