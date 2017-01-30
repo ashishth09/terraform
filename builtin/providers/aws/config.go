@@ -42,6 +42,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/firehose"
 	"github.com/aws/aws-sdk-go/service/glacier"
 	"github.com/aws/aws-sdk-go/service/iam"
+	"github.com/aws/aws-sdk-go/service/inspector"
 	"github.com/aws/aws-sdk-go/service/kinesis"
 	"github.com/aws/aws-sdk-go/service/kms"
 	"github.com/aws/aws-sdk-go/service/lambda"
@@ -78,6 +79,7 @@ type Config struct {
 	AssumeRoleARN         string
 	AssumeRoleExternalID  string
 	AssumeRoleSessionName string
+	AssumeRolePolicy      string
 
 	AllowedAccountIds   []interface{}
 	ForbiddenAccountIds []interface{}
@@ -91,6 +93,7 @@ type Config struct {
 	Insecure         bool
 
 	SkipCredsValidation     bool
+	SkipRegionValidation    bool
 	SkipRequestingAccountId bool
 	SkipMetadataApiCheck    bool
 	S3ForcePathStyle        bool
@@ -133,6 +136,7 @@ type AWSClient struct {
 	kinesisconn           *kinesis.Kinesis
 	kmsconn               *kms.KMS
 	firehoseconn          *firehose.Firehose
+	inspectorconn         *inspector.Inspector
 	elasticacheconn       *elasticache.ElastiCache
 	elasticbeanstalkconn  *elasticbeanstalk.ElasticBeanstalk
 	elastictranscoderconn *elastictranscoder.ElasticTranscoder
@@ -151,10 +155,14 @@ type AWSClient struct {
 func (c *Config) Client() (interface{}, error) {
 	// Get the auth and region. This can fail if keys/regions were not
 	// specified and we're attempting to use the environment.
-	log.Println("[INFO] Building AWS region structure")
-	err := c.ValidateRegion()
-	if err != nil {
-		return nil, err
+	if c.SkipRegionValidation {
+		log.Println("[INFO] Skipping region validation")
+	} else {
+		log.Println("[INFO] Building AWS region structure")
+		err := c.ValidateRegion()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	var client AWSClient
@@ -282,6 +290,7 @@ func (c *Config) Client() (interface{}, error) {
 	client.emrconn = emr.New(sess)
 	client.esconn = elasticsearch.New(sess)
 	client.firehoseconn = firehose.New(sess)
+	client.inspectorconn = inspector.New(sess)
 	client.glacierconn = glacier.New(sess)
 	client.kinesisconn = kinesis.New(kinesisSess)
 	client.kmsconn = kms.New(sess)

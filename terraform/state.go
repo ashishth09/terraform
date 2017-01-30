@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"log"
 	"reflect"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -77,6 +78,11 @@ type State struct {
 	// Remote is used to track the metadata required to
 	// pull and push state files from a remote storage endpoint.
 	Remote *RemoteState `json:"remote,omitempty"`
+
+	// Backend tracks the configuration for the backend in use with
+	// this state. This is used to track any changes in the backend
+	// configuration.
+	Backend *BackendState `json:"backend,omitempty"`
 
 	// Modules contains all the modules in a breadth-first order
 	Modules []*ModuleState `json:"modules"`
@@ -776,6 +782,22 @@ func (s *State) String() string {
 	}
 
 	return strings.TrimSpace(buf.String())
+}
+
+// BackendState stores the configuration to connect to a remote backend.
+type BackendState struct {
+	Type   string                 `json:"type"`   // Backend type
+	Config map[string]interface{} `json:"config"` // Backend raw config
+
+	// Hash is the hash code to uniquely identify the original source
+	// configuration. We use this to detect when there is a change in
+	// configuration even when "type" isn't changed.
+	Hash uint64 `json:"hash"`
+}
+
+// Empty returns true if BackendState has no state.
+func (s *BackendState) Empty() bool {
+	return s == nil || s.Type == ""
 }
 
 // RemoteState is used to track the information about a remote
@@ -1661,6 +1683,32 @@ func (s *InstanceState) MergeDiff(d *InstanceDiff) *InstanceState {
 			}
 
 			result.Attributes[k] = diff.New
+		}
+	}
+
+	// Remove any now empty array, maps or sets because a parent structure
+	// won't include these entries in the count value.
+	isCount := regexp.MustCompile(`\.[%#]$`).MatchString
+	var deleted []string
+
+	for k, v := range result.Attributes {
+		if isCount(k) && v == "0" {
+			delete(result.Attributes, k)
+			deleted = append(deleted, k)
+		}
+	}
+
+	for _, k := range deleted {
+		// Sanity check for invalid structures.
+		// If we removed the primary count key, there should have been no
+		// other keys left with this prefix.
+
+		// this must have a "#" or "%" which we need to remove
+		base := k[:len(k)-1]
+		for k, _ := range result.Attributes {
+			if strings.HasPrefix(k, base) {
+				panic(fmt.Sprintf("empty structure %q has entry %q", base, k))
+			}
 		}
 	}
 

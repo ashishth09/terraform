@@ -6,6 +6,7 @@
 package command
 
 import (
+	alicloudprovider "github.com/hashicorp/terraform/builtin/providers/alicloud"
 	archiveprovider "github.com/hashicorp/terraform/builtin/providers/archive"
 	atlasprovider "github.com/hashicorp/terraform/builtin/providers/atlas"
 	awsprovider "github.com/hashicorp/terraform/builtin/providers/aws"
@@ -40,6 +41,7 @@ import (
 	mysqlprovider "github.com/hashicorp/terraform/builtin/providers/mysql"
 	newrelicprovider "github.com/hashicorp/terraform/builtin/providers/newrelic"
 	nomadprovider "github.com/hashicorp/terraform/builtin/providers/nomad"
+	ns1provider "github.com/hashicorp/terraform/builtin/providers/ns1"
 	nullprovider "github.com/hashicorp/terraform/builtin/providers/null"
 	openstackprovider "github.com/hashicorp/terraform/builtin/providers/openstack"
 	opsgenieprovider "github.com/hashicorp/terraform/builtin/providers/opsgenie"
@@ -47,6 +49,7 @@ import (
 	pagerdutyprovider "github.com/hashicorp/terraform/builtin/providers/pagerduty"
 	postgresqlprovider "github.com/hashicorp/terraform/builtin/providers/postgresql"
 	powerdnsprovider "github.com/hashicorp/terraform/builtin/providers/powerdns"
+	profitbricksprovider "github.com/hashicorp/terraform/builtin/providers/profitbricks"
 	rabbitmqprovider "github.com/hashicorp/terraform/builtin/providers/rabbitmq"
 	rancherprovider "github.com/hashicorp/terraform/builtin/providers/rancher"
 	randomprovider "github.com/hashicorp/terraform/builtin/providers/random"
@@ -73,6 +76,7 @@ import (
 )
 
 var InternalProviders = map[string]plugin.ProviderFunc{
+	"alicloud":     alicloudprovider.Provider,
 	"archive":      archiveprovider.Provider,
 	"atlas":        atlasprovider.Provider,
 	"aws":          awsprovider.Provider,
@@ -107,6 +111,7 @@ var InternalProviders = map[string]plugin.ProviderFunc{
 	"mysql":        mysqlprovider.Provider,
 	"newrelic":     newrelicprovider.Provider,
 	"nomad":        nomadprovider.Provider,
+	"ns1":          ns1provider.Provider,
 	"null":         nullprovider.Provider,
 	"openstack":    openstackprovider.Provider,
 	"opsgenie":     opsgenieprovider.Provider,
@@ -114,6 +119,7 @@ var InternalProviders = map[string]plugin.ProviderFunc{
 	"pagerduty":    pagerdutyprovider.Provider,
 	"postgresql":   postgresqlprovider.Provider,
 	"powerdns":     powerdnsprovider.Provider,
+	"profitbricks": profitbricksprovider.Provider,
 	"rabbitmq":     rabbitmqprovider.Provider,
 	"rancher":      rancherprovider.Provider,
 	"random":       randomprovider.Provider,
