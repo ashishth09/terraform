@@ -22,7 +22,7 @@ type Config struct {
 	SoftlayerAccountNumber string
 }
 
-// ClientSession  contains session Bluemix and Softlayer session
+// ClientSession  contains  Bluemix and Softlayer session
 type ClientSession interface {
 	SoftLayerSession() *slsession.Session
 	BluemixSession() *Session
@@ -32,7 +32,7 @@ type clientSession struct {
 	session *Session
 }
 
-// This implements the interface from terraform-provider-softlayer so we can pass in our ProviderConfig
+// Method to provide the Softlayer Session
 func (sess clientSession) SoftLayerSession() *slsession.Session {
 	return sess.session.SoftLayerSession
 }
